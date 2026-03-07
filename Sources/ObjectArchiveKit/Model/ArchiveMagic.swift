@@ -8,9 +8,9 @@
 import Foundation
 
 public enum ArchiveMagic: String {
-    case `default` = "!<arch>\012"
-    case thin = "!<thin>\012"
-    case big = "!<bout>\012"
+    case `default` = "!<arch>\u{0A}"
+    case thin = "!<thin>\u{0A}"
+    case big = "!<bout>\u{0A}"
 }
 
 extension ArchiveMagic {
