@@ -1,2 +1,6 @@
-// The Swift Programming Language
-// https://docs.swift.org/swift-book
+import Foundation
+
+public enum ObjectArchiveKitError: Error {
+    case invalidMagic
+    case invalidHeader
+}
