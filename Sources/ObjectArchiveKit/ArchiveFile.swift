@@ -86,6 +86,35 @@ public final class ArchiveFile {
     }
 }
 
+// MARK: -  GNU string table
+extension ArchiveFile {
+    var _gnuStringsMember: ArchiveMember? {
+        members.first(
+            where: {
+                $0.header.name == "//"
+            }
+        )
+    }
+
+    public var gnuStrings: GNUStrings? {
+        guard let _gnuStringsMember else { return nil }
+        guard let offset = _gnuStringsMember.dataOffset(in: self) else {
+            return nil
+        }
+        let size = _gnuStringsMember.header.size
+        let slice = try? fileHandle.fileSlice(
+            offset: offset + headerStartOffset,
+            length: size
+        )
+        guard let slice else { return nil }
+        return .init(
+            fileSlice: slice,
+            offset: offset,
+            size: size
+        )
+    }
+}
+
 // MARK: Internal
 
 extension ArchiveFile {
