@@ -86,6 +86,22 @@ public final class ArchiveFile {
     }
 }
 
+// MARK: -  GNU symbol table
+extension ArchiveFile {
+    var _gnuSymbolsMember: ArchiveMember? {
+        members.first(
+            where: {
+                $0.header.name == "/"
+            }
+        )
+    }
+
+    public var gnuSymbolTable: ArchiveGNUSymbolTable? {
+        guard let _gnuSymbolsMember else { return nil }
+        return try? .load(from: _gnuSymbolsMember, in: self)
+    }
+}
+
 // MARK: -  GNU string table
 extension ArchiveFile {
     var _gnuStringsMember: ArchiveMember? {
