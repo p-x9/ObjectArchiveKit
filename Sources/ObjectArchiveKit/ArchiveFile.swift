@@ -25,6 +25,9 @@ public final class ArchiveFile {
     /// The file URL of the archive.
     public let url: URL
 
+    /// Parsed archive magic header.
+    public let magic: ArchiveMagic
+
     /// File offset at which the archive header begins.
     public let headerStartOffset: Int
     let endOffset: Int
@@ -60,14 +63,14 @@ public final class ArchiveFile {
         )
 
         /* Magic */
-        let magic = try fileHandle.readData(
+        let magicData = try fileHandle.readData(
             offset: headerStartOffset,
             length: ArchiveMagic.layoutSize
         )
-        guard let string = String(data: magic, encoding: .utf8) else {
+        guard let string = String(data: magicData, encoding: .utf8) else {
             throw ObjectArchiveKitError.invalidMagic
         }
-        guard ArchiveMagic(rawValue: string) != nil else {
+        guard let magic = ArchiveMagic(rawValue: string) else {
             throw ObjectArchiveKitError.invalidMagic
         }
 
@@ -79,10 +82,73 @@ public final class ArchiveFile {
         )
 
         self.url = url
+        self.magic = magic
         self.headerStartOffset = headerStartOffset
         self.endOffset = endOffset
         self.fileHandle = fileHandle
         self.members = members
+    }
+}
+
+extension ArchiveFile {
+    /// Archive layout kind inferred from member naming conventions.
+    ///
+    /// Pattern used by LLVM (`Archive.cpp`):
+    /// - GNU: first `/` (optional symbol table), second `//` (optional string table).
+    /// - BSD: first `__.SYMDEF` or `__.SYMDEF SORTED`; long names are `#1/<size>`.
+    /// - COFF: first `/`, second `/`, third `//` (optional string table).
+    ///
+    /// Reference:
+    /// https://github.com/llvm/llvm-project/blob/97572c1860efeeb97b5940927cee72081b61810a/llvm/lib/Object/Archive.cpp#L758
+    public var kind: ArchiveKind  {
+        guard let firstMember = members.first else {
+            return .gnu
+        }
+
+        let firstName = firstMember.header.name
+
+        if firstName == "__.SYMDEF" || firstName == "__.SYMDEF SORTED" {
+            return .bsd
+        }
+        if firstName == "__.SYMDEF_64" {
+            return .darwin64
+        }
+
+        if firstName.hasPrefix("#1/") {
+            let resolvedName = firstMember.name(in: self)
+            if resolvedName == "__.SYMDEF_64"
+                || resolvedName == "__.SYMDEF_64 SORTED" {
+                return .darwin64
+            }
+            return .bsd
+        }
+
+        let has64SymTable = (firstName == "/SYM64/")
+        let defaultKind: ArchiveKind = has64SymTable ? .gnu64 : .gnu
+
+        let name: String
+        if firstName == "/" || has64SymTable {
+            guard let nextName = members.dropFirst().first?.header.name else {
+                return defaultKind
+            }
+            name = nextName
+        } else {
+            name = firstName
+        }
+
+        if name == "//" {
+            return defaultKind
+        }
+
+        if name.hasPrefix("/") == false {
+            return defaultKind
+        }
+
+        if name == "/" {
+            return .coff
+        }
+
+        return defaultKind
     }
 }
 
