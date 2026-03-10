@@ -152,7 +152,7 @@ extension ArchiveFile {
     }
 }
 
-// MARK: -  GNU symbol table
+// MARK: -  GNU
 extension ArchiveFile {
     var _gnuSymbolsMember: ArchiveMember? {
         members.first(
@@ -168,10 +168,10 @@ extension ArchiveFile {
     }
 }
 
-// MARK: -  GNU string table
 extension ArchiveFile {
-    var _gnuStringsMember: ArchiveMember? {
-        members.first(
+    private var _gnuStringsMember: ArchiveMember? {
+        guard [.gnu, .gnu64].contains(kind) else { return nil }
+        return members.first(
             where: {
                 $0.header.name == "//"
             }
@@ -193,6 +193,38 @@ extension ArchiveFile {
             fileSlice: slice,
             offset: offset,
             size: size
+        )
+    }
+}
+
+// MARK: - COFF
+
+extension ArchiveFile {
+    private var _coffStringsMember: ArchiveMember? {
+        guard kind == .coff else { return nil }
+        return members.first(
+            where: {
+                $0.header.name == "//"
+            }
+        )
+    }
+
+    public var coffStrings: UnicodeStrings<UTF8>? {
+        guard let _coffStringsMember else { return nil }
+        guard let offset = _coffStringsMember.dataOffset(in: self) else {
+            return nil
+        }
+        let size = _coffStringsMember.header.size
+        let slice = try? fileHandle.fileSlice(
+            offset: offset + headerStartOffset,
+            length: size
+        )
+        guard let slice else { return nil }
+        return .init(
+            source: slice,
+            offset: offset,
+            size: size,
+            isSwapped: false
         )
     }
 }
