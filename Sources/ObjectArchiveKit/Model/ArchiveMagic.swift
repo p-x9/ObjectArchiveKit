@@ -14,5 +14,5 @@ public enum ArchiveMagic: String {
 }
 
 extension ArchiveMagic {
-    public static var layoutSize: Int { 8 }
+    public static var layoutSize: Int { 8 /* SARMAG */ }
 }
