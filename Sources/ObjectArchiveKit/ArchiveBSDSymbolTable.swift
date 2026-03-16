@@ -25,6 +25,10 @@ extension ArchiveBSDSymbolTable {
 }
 
 extension ArchiveBSDSymbolTable {
+    public var count: Int {
+        metadata.count
+    }
+
     public func isSorted(in archive: ArchiveFile) -> Bool {
         member.name(in: archive).hasSuffix("SORTED")
     }

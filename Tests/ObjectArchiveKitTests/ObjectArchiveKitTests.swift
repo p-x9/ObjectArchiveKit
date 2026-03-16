@@ -56,3 +56,29 @@ extension ObjectArchiveKitTests {
         }
     }
 }
+
+extension ObjectArchiveKitTests {
+    func testBSDSymbols() throws {
+        guard let symbolTable = archive.bsdSymbolTable else {
+            return
+        }
+        print("count: \(symbolTable.count)")
+        print("isSorted: \(symbolTable.isSorted(in: archive))")
+        for symbol in try symbolTable.entries(in: archive) {
+            let name = try symbolTable.name(for: symbol, in: archive)
+            print(name ?? "unknown", symbol.stringOffset, symbol.headerOffset)
+        }
+    }
+
+    func testDarwin64Symbols() throws {
+        guard let symbolTable = archive.darwin64SymbolTable else {
+            return
+        }
+        print("count: \(symbolTable.count)")
+        print("isSorted: \(symbolTable.isSorted(in: archive))")
+        for symbol in try symbolTable.entries(in: archive) {
+            let name = try symbolTable.name(for: symbol, in: archive)
+            print(name ?? "unknown", symbol.stringOffset, symbol.headerOffset)
+        }
+    }
+}
