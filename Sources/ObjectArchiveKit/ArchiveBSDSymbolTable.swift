@@ -92,6 +92,14 @@ extension ArchiveBSDSymbolTable {
             isSwapped: false
         )
     }
+
+    public func name(
+        for symbol: some ArchiveRanLibProtocol,
+        in archive: ArchiveFile
+    ) throws -> String? {
+        guard let names = try names(in: archive) else { return nil }
+        return names.string(at: symbol.stringOffset)?.string
+    }
 }
 
 extension ArchiveBSDSymbolTable {
