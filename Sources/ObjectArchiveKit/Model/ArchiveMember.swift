@@ -60,7 +60,7 @@ extension ArchiveMember {
 }
 
 extension ArchiveMember {
-    func dataOffset(in archive: ArchiveFile) -> Int? {
+    public func dataOffset(in archive: ArchiveFile) -> Int? {
         guard let payloadOffset = payloadOffset(in: archive) else {
             return nil
         }
