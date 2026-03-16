@@ -103,6 +103,20 @@ extension ArchiveBSDSymbolTable {
 }
 
 extension ArchiveBSDSymbolTable {
+    public func member(
+        for symbol: some ArchiveRanLibProtocol,
+        in archive: ArchiveFile
+    ) throws -> ArchiveMember? {
+        let header: ArchiveMemberHeader = try archive.fileHandle
+            .read(offset: symbol.headerOffset + archive.headerStartOffset)
+        return .init(
+            header: header,
+            offset: symbol.headerOffset
+        )
+    }
+}
+
+extension ArchiveBSDSymbolTable {
     static func load(
         from member: ArchiveMember,
         in archive: ArchiveFile,
