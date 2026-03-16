@@ -156,13 +156,10 @@ extension ArchiveFile {
 
 extension ArchiveFile {
     var _bsdSymbolsMember: ArchiveMember? {
-        guard kind == .bsd else { return nil }
-        guard let firstMember = members.first else { return nil }
-        let name = firstMember.name(in: self)
-        if name == "__.SYMDEF" || name == "__.SYMDEF SORTED" {
-            return firstMember
-        }
-        return nil
+        firstMember(
+            for: .bsd,
+            resolvedNames: ["__.SYMDEF", "__.SYMDEF SORTED"]
+        )
     }
 
     public var bsdSymbolTable: ArchiveBSDSymbolTable? {
@@ -179,13 +176,10 @@ extension ArchiveFile {
 
 extension ArchiveFile {
     var _darwin64SymbolsMember: ArchiveMember? {
-        guard kind == .darwin64 else { return nil }
-        guard let firstMember = members.first else { return nil }
-        let name = firstMember.name(in: self)
-        if name == "__.SYMDEF_64" || name == "__.SYMDEF_64 SORTED" {
-            return firstMember
-        }
-        return nil
+        firstMember(
+            for: .darwin64,
+            resolvedNames: ["__.SYMDEF_64", "__.SYMDEF_64 SORTED"]
+        )
     }
 
     public var darwin64SymbolTable: ArchiveBSDSymbolTable? {
@@ -201,11 +195,7 @@ extension ArchiveFile {
 // MARK: -  GNU
 extension ArchiveFile {
     var _gnuSymbolsMember: ArchiveMember? {
-        members.first(
-            where: {
-                $0.header.name == "/"
-            }
-        )
+        firstMember(named: "/", in: [.gnu, .gnu64, .coff])
     }
 
     public var gnuSymbolTable: ArchiveGNUSymbolTable? {
@@ -216,12 +206,7 @@ extension ArchiveFile {
 
 extension ArchiveFile {
     private var _gnuStringsMember: ArchiveMember? {
-        guard [.gnu, .gnu64].contains(kind) else { return nil }
-        return members.first(
-            where: {
-                $0.header.name == "//"
-            }
-        )
+        firstMember(named: "//", in: [.gnu, .gnu64])
     }
 
     public var gnuStrings: GNUStrings? {
@@ -247,12 +232,7 @@ extension ArchiveFile {
 
 extension ArchiveFile {
     private var _coffStringsMember: ArchiveMember? {
-        guard kind == .coff else { return nil }
-        return members.first(
-            where: {
-                $0.header.name == "//"
-            }
-        )
+        firstMember(named: "//", in: [.coff])
     }
 
     public var coffStrings: UnicodeStrings<UTF8>? {
@@ -316,5 +296,26 @@ extension ArchiveFile {
         }
 
         return members
+    }
+}
+
+extension ArchiveFile {
+    private func firstMember(
+        for expectedKind: ArchiveKind,
+        resolvedNames: Set<String>
+    ) -> ArchiveMember? {
+        guard kind == expectedKind else { return nil }
+        guard let firstMember = members.first else { return nil }
+        let name = firstMember.name(in: self)
+        guard resolvedNames.contains(name) else { return nil }
+        return firstMember
+    }
+    
+    private func firstMember(
+        named headerName: String,
+        in expectedKinds: Set<ArchiveKind>
+    ) -> ArchiveMember? {
+        guard expectedKinds.contains(kind) else { return nil }
+        return members.first(where: { $0.header.name == headerName })
     }
 }
