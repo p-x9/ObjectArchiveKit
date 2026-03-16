@@ -46,7 +46,7 @@ public final class ArchiveFile {
         try self.init(url: url, headerStartOffset: 0)
     }
 
-    init(
+    public init(
         url: URL,
         headerStartOffset: Int,
         size: Int? = nil
