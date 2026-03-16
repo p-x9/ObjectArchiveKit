@@ -303,7 +303,7 @@ extension ArchiveFile {
             members.append(
                 .init(
                     header: header,
-                    offset: offset
+                    offset: offset - startOffset
                 )
             )
             offset += ArchiveMemberHeader.layoutSize
