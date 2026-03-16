@@ -39,30 +39,14 @@ extension ArchiveBSDSymbolTable {
         in archive: ArchiveFile
     ) throws -> DataSequence<ArchiveRanLib32>? {
         guard !is64Bit else { return nil }
-        guard let offset = member.dataOffset(in: archive) else {
-            return nil
-        }
-        return archive.fileHandle.readDataSequence(
-            offset: numericCast(
-                offset + MemoryLayout<UInt32>.size + archive.headerStartOffset
-            ),
-            numberOfElements: metadata.count
-        )
+        return try readEntries(in: archive, as: ArchiveRanLib32.self)
     }
 
     public func entries64(
         in archive: ArchiveFile
     ) throws -> DataSequence<ArchiveRanLib64>? {
         guard is64Bit else { return nil }
-        guard let offset = member.dataOffset(in: archive) else {
-            return nil
-        }
-        return archive.fileHandle.readDataSequence(
-            offset: numericCast(
-                offset + MemoryLayout<UInt64>.size + archive.headerStartOffset
-            ),
-            numberOfElements: metadata.count
-        )
+        return try readEntries(in: archive, as: ArchiveRanLib64.self)
     }
 
     public func entries(
@@ -85,12 +69,15 @@ extension ArchiveBSDSymbolTable {
         guard metadata.stringTableSize > 0 else {
             return nil
         }
-        guard let offset = member.dataOffset(in: archive) else {
+        guard let offset = archiveOffset(
+            in: archive,
+            additionalOffset: metadata.stringTableOffset
+        ) else {
             return nil
         }
 
         let slice = try archive.fileHandle.fileSlice(
-            offset: offset + metadata.stringTableOffset + archive.headerStartOffset,
+            offset: offset + archive.headerStartOffset,
             length: metadata.stringTableSize
         )
         return .init(
@@ -124,58 +111,111 @@ extension ArchiveBSDSymbolTable {
     }
 }
 
+// MARK: Load
+
 extension ArchiveBSDSymbolTable {
     static func load(
         from member: ArchiveMember,
         in archive: ArchiveFile,
         is64Bit: Bool
     ) throws -> ArchiveBSDSymbolTable? {
+        if is64Bit {
+            return try load(
+                from: member,
+                in: archive,
+                wordType: UInt64.self,
+                entrySize: ArchiveRanLib64.layoutSize,
+                is64Bit: true
+            )
+        } else {
+            return try load(
+                from: member,
+                in: archive,
+                wordType: UInt32.self,
+                entrySize: ArchiveRanLib32.layoutSize,
+                is64Bit: false
+            )
+        }
+    }
+}
+
+// MARK: Private
+
+extension ArchiveBSDSymbolTable {
+    private var byteCountFieldSize: Int {
+        is64Bit ? MemoryLayout<UInt64>.size : MemoryLayout<UInt32>.size
+    }
+
+    private var entriesOffset: Int {
+        byteCountFieldSize
+    }
+
+    private func archiveOffset(
+        in archive: ArchiveFile,
+        additionalOffset: Int = 0
+    ) -> Int? {
+        guard let offset = member.dataOffset(in: archive) else {
+            return nil
+        }
+        return offset + additionalOffset
+    }
+
+    private func readEntries<Entry>(
+        in archive: ArchiveFile,
+        as _: Entry.Type
+    ) throws -> DataSequence<Entry>? where Entry: ArchiveRanLibProtocol & LayoutWrapper {
+        guard let offset = archiveOffset(
+            in: archive,
+            additionalOffset: entriesOffset
+        ) else {
+            return nil
+        }
+        return archive.fileHandle.readDataSequence(
+            offset: numericCast(offset + archive.headerStartOffset),
+            numberOfElements: metadata.count
+        )
+    }
+
+    private static func makeMetadata<Word: FixedWidthInteger>(
+        ranlibByteSize: Word,
+        stringTableSize: Word,
+        entrySize: Int
+    ) -> Metadata {
+        let ranlibByteSize: Int = numericCast(ranlibByteSize)
+        return .init(
+            count: ranlibByteSize / entrySize,
+            ranlibByteSize: ranlibByteSize,
+            stringTableOffset: MemoryLayout<Word>.size
+                + ranlibByteSize
+                + MemoryLayout<Word>.size,
+            stringTableSize: numericCast(stringTableSize)
+        )
+    }
+
+    private static func load<Word: FixedWidthInteger>(
+        from member: ArchiveMember,
+        in archive: ArchiveFile,
+        wordType: Word.Type,
+        entrySize: Int,
+        is64Bit: Bool
+    ) throws -> ArchiveBSDSymbolTable? {
         guard let offset = member.dataOffset(in: archive) else {
             return nil
         }
 
-        if is64Bit {
-            let ranlibByteSize: UInt64 = try archive.fileHandle.read(
-                offset: offset + archive.headerStartOffset
-            )
-            let stringTableSize: UInt64 = try archive.fileHandle.read(
-                offset: offset
-                + MemoryLayout<UInt64>.size
-                + numericCast(ranlibByteSize)
-                + archive.headerStartOffset
-            )
-            let metadata: Metadata = .init(
-                count: numericCast(ranlibByteSize) / ArchiveRanLib64.layoutSize,
-                ranlibByteSize: numericCast(ranlibByteSize),
-                stringTableOffset: numericCast(
-                    MemoryLayout<UInt64>.size
-                    + numericCast(ranlibByteSize)
-                    + MemoryLayout<UInt64>.size
-                ),
-                stringTableSize: numericCast(stringTableSize)
-            )
-            return .init(member: member, metadata: metadata, is64Bit: is64Bit)
-        } else {
-            let ranlibByteSize: UInt32 = try archive.fileHandle.read(
-                offset: offset + archive.headerStartOffset
-            )
-            let stringTableSize: UInt32 = try archive.fileHandle.read(
-                offset: offset
-                + MemoryLayout<UInt32>.size
-                + numericCast(ranlibByteSize)
-                + archive.headerStartOffset
-            )
-            let metadata: Metadata = .init(
-                count: numericCast(ranlibByteSize) / ArchiveRanLib32.layoutSize,
-                ranlibByteSize: numericCast(ranlibByteSize),
-                stringTableOffset: numericCast(
-                    MemoryLayout<UInt32>.size
-                    + numericCast(ranlibByteSize)
-                    + MemoryLayout<UInt32>.size
-                ),
-                stringTableSize: numericCast(stringTableSize)
-            )
-            return .init(member: member, metadata: metadata, is64Bit: is64Bit)
-        }
+        let baseOffset = offset + archive.headerStartOffset
+        let ranlibByteSize: Word = try archive.fileHandle.read(offset: baseOffset)
+        let stringTableSizeOffset = baseOffset
+            + MemoryLayout<Word>.size
+            + numericCast(ranlibByteSize)
+        let stringTableSize: Word = try archive.fileHandle.read(
+            offset: stringTableSizeOffset
+        )
+        let metadata = makeMetadata(
+            ranlibByteSize: ranlibByteSize,
+            stringTableSize: stringTableSize,
+            entrySize: entrySize
+        )
+        return .init(member: member, metadata: metadata, is64Bit: is64Bit)
     }
 }
