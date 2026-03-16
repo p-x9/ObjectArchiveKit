@@ -40,12 +40,24 @@ public final class ArchiveFile {
     /// Creates an `ArchiveFile` by reading and parsing the archive at the specified file URL.
     ///
     /// - Parameter url: The file URL of the archive.
-    /// - Throws: `MachOKitError.invalidArchiveMagic` when the file is not an `ar` archive,
-    ///           or `MachOKitError.invalidArchiveHeader` when a member header is malformed.
+    /// - Throws: `ObjectArchiveKitError.invalidMagic` when the file is not an `ar` archive,
+    ///   or `ObjectArchiveKitError.invalidHeader` when a member header is malformed.
     public convenience init(url: URL) throws {
         try self.init(url: url, headerStartOffset: 0)
     }
 
+    /// Creates an `ArchiveFile` by reading a range from an archive file.
+    ///
+    /// Use this initializer when the archive data starts at a non-zero offset
+    /// or when only a portion of the file should be parsed.
+    ///
+    /// - Parameters:
+    ///   - url: The file URL of the archive container.
+    ///   - headerStartOffset: The file offset where the archive magic header begins.
+    ///   - size: The number of bytes to parse from `headerStartOffset`. When `nil`,
+    ///     parsing continues to the end of the file.
+    /// - Throws: `ObjectArchiveKitError.invalidMagic` when the archive magic is invalid,
+    ///   or `ObjectArchiveKitError.invalidHeader` when a member header is malformed.
     public init(
         url: URL,
         headerStartOffset: Int,
