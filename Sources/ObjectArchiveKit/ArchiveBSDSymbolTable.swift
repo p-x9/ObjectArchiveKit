@@ -39,7 +39,9 @@ extension ArchiveBSDSymbolTable {
             return nil
         }
         return archive.fileHandle.readDataSequence(
-            offset: numericCast(offset + MemoryLayout<UInt32>.size),
+            offset: numericCast(
+                offset + MemoryLayout<UInt32>.size + archive.headerStartOffset
+            ),
             numberOfElements: metadata.count
         )
     }
@@ -52,7 +54,9 @@ extension ArchiveBSDSymbolTable {
             return nil
         }
         return archive.fileHandle.readDataSequence(
-            offset: numericCast(offset + MemoryLayout<UInt64>.size),
+            offset: numericCast(
+                offset + MemoryLayout<UInt64>.size + archive.headerStartOffset
+            ),
             numberOfElements: metadata.count
         )
     }
