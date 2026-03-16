@@ -152,6 +152,52 @@ extension ArchiveFile {
     }
 }
 
+// MARK: - BSD
+
+extension ArchiveFile {
+    var _bsdSymbolsMember: ArchiveMember? {
+        guard kind == .bsd else { return nil }
+        guard let firstMember = members.first else { return nil }
+        let name = firstMember.name(in: self)
+        if name == "__.SYMDEF" || name == "__.SYMDEF SORTED" {
+            return firstMember
+        }
+        return nil
+    }
+
+    public var bsdSymbolTable: ArchiveBSDSymbolTable? {
+        guard let _bsdSymbolsMember else { return nil }
+        return try? .load(
+            from: _bsdSymbolsMember,
+            in: self,
+            is64Bit: false
+        )
+    }
+}
+
+// MARK: - Darwin64
+
+extension ArchiveFile {
+    var _darwin64SymbolsMember: ArchiveMember? {
+        guard kind == .darwin64 else { return nil }
+        guard let firstMember = members.first else { return nil }
+        let name = firstMember.name(in: self)
+        if name == "__.SYMDEF_64" || name == "__.SYMDEF_64 SORTED" {
+            return firstMember
+        }
+        return nil
+    }
+
+    public var darwin64SymbolTable: ArchiveBSDSymbolTable? {
+        guard let _darwin64SymbolsMember else { return nil }
+        return try? .load(
+            from: _darwin64SymbolsMember,
+            in: self,
+            is64Bit: true
+        )
+    }
+}
+
 // MARK: -  GNU
 extension ArchiveFile {
     var _gnuSymbolsMember: ArchiveMember? {
