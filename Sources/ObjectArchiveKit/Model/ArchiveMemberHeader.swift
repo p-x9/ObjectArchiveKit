@@ -66,7 +66,7 @@ extension ArchiveMemberHeader {
     }
 }
 
-#if swift(>=5.9)
+#if swift(>=5.10)
 extension String {
     fileprivate init<each T: FixedWidthInteger>(tuple: (repeat each T)) {
         self = withUnsafePointer(to: tuple) {
