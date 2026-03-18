@@ -66,7 +66,7 @@ extension ArchiveMemberHeader {
     }
 }
 
-#if swift(>=5.9)
+#if swift(>=5.11)
 extension String {
     fileprivate init<each T: FixedWidthInteger>(tuple: (repeat each T)) {
         self = withUnsafePointer(to: tuple) {
@@ -82,11 +82,35 @@ extension String {
 }
 #else
 extension String {
+    fileprivate typealias CCharTuple16 = (CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar)
+
+    fileprivate init(tuple: CCharTuple16) {
+        self = withUnsafePointer(to: tuple) {
+            let size = MemoryLayout<CCharTuple16>.size
+            let data = Data(bytes: $0, count: size) + [0]
+            return String(cString: data) ?? ""
+        }
+    }
+}
+
+extension String {
     fileprivate typealias CCharTuple12 = (CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar)
 
     fileprivate init(tuple: CCharTuple12) {
         self = withUnsafePointer(to: tuple) {
             let size = MemoryLayout<CCharTuple12>.size
+            let data = Data(bytes: $0, count: size) + [0]
+            return String(cString: data) ?? ""
+        }
+    }
+}
+
+extension String {
+    fileprivate typealias CCharTuple8 = (CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar)
+
+    fileprivate init(tuple: CCharTuple8) {
+        self = withUnsafePointer(to: tuple) {
+            let size = MemoryLayout<CCharTuple8>.size
             let data = Data(bytes: $0, count: size) + [0]
             return String(cString: data) ?? ""
         }
@@ -129,4 +153,3 @@ extension String {
     }
 }
 #endif
-
