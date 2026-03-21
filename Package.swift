@@ -2,6 +2,8 @@
 
 import PackageDescription
 
+let binaryParseSupportVersion: Version = "0.2.1"
+
 let package = Package(
     name: "ObjectArchiveKit",
     products: [
@@ -18,11 +20,7 @@ let package = Package(
         .package(
             url: "https://github.com/p-x9/swift-fileio-extra.git",
             from: "0.2.2"
-        ),
-        .package(
-            url: "https://github.com/p-x9/swift-binary-parse-support.git",
-            from: "0.2.1"
-        ),
+        )
     ],
     targets: [
         .target(
@@ -30,11 +28,7 @@ let package = Package(
             dependencies: [
                 "ObjectArchiveKitC",
                 .product(name: "FileIO", package: "swift-fileio"),
-                .product(name: "FileIOBinary", package: "swift-fileio-extra"),
-                .product(
-                    name: "BinaryParseSupport",
-                    package: "swift-binary-parse-support"
-                )
+                .product(name: "FileIOBinary", package: "swift-fileio-extra")
             ]
         ),
         .target(name: "ObjectArchiveKitC"),
@@ -44,3 +38,38 @@ let package = Package(
         ),
     ]
 )
+
+// MARK: - Binary Parse Support
+
+let objectArchiveKit = package.targets
+    .first(where: { $0.name == "ObjectArchiveKit" })
+
+let isForBinaryKitFramework = Context.environment["BUILD_BINARY_KIT_FW"] != nil
+
+if isForBinaryKitFramework {
+    package.dependencies += [
+        .package(
+            url: "https://github.com/p-x9/swift-binary-parse-support-bin.git",
+            from: binaryParseSupportVersion
+        ),
+    ]
+    objectArchiveKit?.dependencies += [
+        .product(
+            name: "BinaryParseSupport",
+            package: "swift-binary-parse-support-bin"
+        )
+    ]
+} else {
+    package.dependencies += [
+        .package(
+            url: "https://github.com/p-x9/swift-binary-parse-support.git",
+            from: binaryParseSupportVersion
+        ),
+    ]
+    objectArchiveKit?.dependencies += [
+        .product(
+            name: "BinaryParseSupport",
+            package: "swift-binary-parse-support"
+        )
+    ]
+}
