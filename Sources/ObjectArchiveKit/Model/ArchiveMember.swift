@@ -44,7 +44,7 @@ extension ArchiveMember {
         if rawName.hasPrefix("/"),
            rawName.dropFirst().allSatisfy(\.isNumber),
            let offset = Int(rawName.dropFirst()),
-           let strings = archive.gnuStrings,
+           let strings: any StringTable = archive.gnuStrings ?? archive.coffStrings,
            let resolvedName = strings.string(at: offset)?.string {
             if resolvedName.hasSuffix("/") {
                 return String(resolvedName.dropLast())
