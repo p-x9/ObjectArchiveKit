@@ -19,6 +19,8 @@ import ObjectArchiveKitC
 ///
 /// `ArchiveFile` parses the archive container and exposes its members.
 /// Mach-O members can then be loaded through ``machOFiles()``.
+///
+/// [PE/COFF](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format?utm_source=chatgpt.com#archive-library-file-format)
 public final class ArchiveFile {
     typealias File = MemoryMappedFile
 
@@ -207,12 +209,15 @@ extension ArchiveFile {
 // MARK: -  GNU
 extension ArchiveFile {
     var _gnuSymbolsMember: ArchiveMember? {
-        firstMember(named: "/", in: [.gnu, .gnu64, .coff])
+        firstMember(named: "/", in: [.gnu, .gnu64])
     }
 
     public var gnuSymbolTable: ArchiveGNUSymbolTable? {
         guard let _gnuSymbolsMember else { return nil }
-        return try? .load(from: _gnuSymbolsMember, in: self)
+        return try? .load(
+            from: _gnuSymbolsMember,
+            in: self
+        )
     }
 }
 
@@ -263,6 +268,20 @@ extension ArchiveFile {
             offset: offset,
             size: size,
             isSwapped: false
+        )
+    }
+}
+
+extension ArchiveFile {
+    var _coffLegacySymbolsMember: ArchiveMember? {
+        firstMember(named: "/", in: [.coff])
+    }
+
+    public var coffSymbolTable: ArchiveCOFFLegacySymbolTable? {
+        guard let _coffLegacySymbolsMember else { return nil }
+        return try? .load(
+            from: _coffLegacySymbolsMember,
+            in: self
         )
     }
 }
