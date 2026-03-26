@@ -287,9 +287,7 @@ extension ArchiveFile {
 
     var _coffSymbolsMember: ArchiveMember? {
         guard kind == .coff else { return nil }
-        var members = self.members
-        members.removeFirst()
-        return members.first(where: { $0.header.name == "/" })
+        return members.dropFirst().first(where: { $0.header.name == "/" })
     }
 
     public var coffSymbolTable: ArchiveCOFFSymbolTable? {
