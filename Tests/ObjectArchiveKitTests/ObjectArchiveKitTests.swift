@@ -82,3 +82,49 @@ extension ObjectArchiveKitTests {
         }
     }
 }
+
+extension ObjectArchiveKitTests {
+    func testCOFFLegacySymbols() throws {
+        guard let symbolTable = archive.coffLegacySymbolTable else {
+            return
+        }
+        print("count: \(symbolTable.count)")
+        if let offsets = symbolTable.offsets(in: archive) {
+            print("offset:")
+            for (i, offset) in offsets.enumerated() {
+                print("", i, offset)
+            }
+        }
+        if let names = try symbolTable.names(in: archive) {
+            print("names:")
+            for (i, name) in names.enumerated() {
+                print("", i, name.string)
+            }
+        }
+    }
+
+    func testCOFFSymbols() throws {
+        guard let symbolTable = archive.coffSymbolTable else {
+            return
+        }
+        print("members: \(symbolTable.metadata.numberOfMembers)")
+        if let offsets = symbolTable.offsets(in: archive) {
+            print("offset:")
+            for (i, offset) in offsets.enumerated() {
+                print("", i, offset)
+            }
+        }
+        if let indices = symbolTable.indices(in: archive) {
+            print("indices:")
+            for (i, index) in indices.enumerated() {
+                print("", i, index)
+            }
+        }
+        if let names = try symbolTable.names(in: archive) {
+            print("names:")
+            for (i, name) in names.enumerated() {
+                print("", i, name.string)
+            }
+        }
+    }
+}
