@@ -71,9 +71,18 @@ extension ArchiveCOFFSymbolTable {
             return nil
         }
 
+        // Ensure the string table lies within the member and has a positive length.
+        guard metadata.stringTableOffset <= member.header.size else {
+            return nil
+        }
+        let length = member.header.size - metadata.stringTableOffset
+        guard length > 0 else {
+            return nil
+        }
+
         let slice = try archive.fileHandle.fileSlice(
             offset: offset + archive.headerStartOffset,
-            length: member.header.size - metadata.stringTableOffset
+            length: length
         )
         return .init(
             source: slice,
