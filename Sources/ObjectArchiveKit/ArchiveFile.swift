@@ -277,10 +277,25 @@ extension ArchiveFile {
         firstMember(named: "/", in: [.coff])
     }
 
-    public var coffSymbolTable: ArchiveCOFFLegacySymbolTable? {
+    public var coffLegacySymbolTable: ArchiveCOFFLegacySymbolTable? {
         guard let _coffLegacySymbolsMember else { return nil }
         return try? .load(
             from: _coffLegacySymbolsMember,
+            in: self
+        )
+    }
+
+    var _coffSymbolsMember: ArchiveMember? {
+        guard kind == .coff else { return nil }
+        var members = self.members
+        members.removeFirst()
+        return members.first(where: { $0.header.name == "/" })
+    }
+
+    public var coffSymbolTable: ArchiveCOFFSymbolTable? {
+        guard let _coffSymbolsMember else { return nil }
+        return try? .load(
+            from: _coffSymbolsMember,
             in: self
         )
     }
