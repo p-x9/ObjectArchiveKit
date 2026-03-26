@@ -20,7 +20,7 @@ import ObjectArchiveKitC
 /// `ArchiveFile` parses the archive container and exposes its members.
 /// Mach-O members can then be loaded through ``machOFiles()``.
 ///
-/// [PE/COFF](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format?utm_source=chatgpt.com#archive-library-file-format)
+/// [PE/COFF](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#archive-library-file-format)
 public final class ArchiveFile {
     typealias File = MemoryMappedFile
 
