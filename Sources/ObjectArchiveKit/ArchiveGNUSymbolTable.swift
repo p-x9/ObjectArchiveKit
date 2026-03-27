@@ -9,6 +9,8 @@
 import Foundation
 @_spi(Core) import BinaryParseSupport
 
+public typealias ArchiveCOFFLegacySymbolTable = ArchiveGNUSymbolTable
+
 public struct ArchiveGNUSymbolTable: Sendable {
     public let member: ArchiveMember
     public let count: Int
