@@ -58,7 +58,7 @@ extension ArchiveMemberHeader {
 
 extension ArchiveMemberHeader {
     public var isValid: Bool {
-        guard fmag == ARFMAG,
+        guard fmag == ObjectArchiveKitC.ARFMAG,
               Int(_size) != nil else {
             return false
         }
